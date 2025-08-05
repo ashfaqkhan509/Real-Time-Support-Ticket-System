@@ -39,7 +39,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_DB: task_manager_test_db
+          POSTGRES_DB: ticketing_app_test_db
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
@@ -91,10 +91,6 @@ jobs:
             echo "Waiting for Postgres..."
             sleep 2
           done
-
-      - name: Run Django Migrations
-        run: |
-          python manage.py migrate
 
       - name: Run Tests
         run: |

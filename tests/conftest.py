@@ -12,10 +12,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 @pytest.fixture(autouse=True)
 def reset_rate_limiter():
     """Reset rate limiter before each test to avoid shared state."""
     limiter.reset()
+
 
 @pytest_asyncio.fixture(scope="function")
 async def setup_db():
@@ -41,10 +43,12 @@ async def setup_db():
 
     await test_engine.dispose()
 
+
 @pytest_asyncio.fixture
 async def db_session(setup_db):
     async with setup_db() as session:
         yield session
+
 
 @pytest_asyncio.fixture
 async def client(db_session: AsyncSession):

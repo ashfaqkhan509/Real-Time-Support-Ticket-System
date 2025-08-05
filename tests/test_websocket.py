@@ -1,16 +1,12 @@
 import pytest
 from fastapi.testclient import TestClient
-from fastapi import WebSocketDisconnect
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from ticketing_app.models import User, Ticket
-from ticketing_app.auth import create_access_token, get_password_hash
 from ticketing_app.main import app
-import json
+
 
 @pytest.fixture
 def client():
     return TestClient(app)
+
 
 def test_websocket_authentication_required(client: TestClient):
     """Test WebSocket requires authentication"""
@@ -21,6 +17,7 @@ def test_websocket_authentication_required(client: TestClient):
         assert "error" in data
         assert "Authentication token required" in data["error"]
 
+
 def test_websocket_invalid_token_rejected(client: TestClient):
     """Test WebSocket rejects invalid tokens"""
     with client.websocket_connect("/ws/tickets/1") as websocket:
@@ -28,4 +25,3 @@ def test_websocket_invalid_token_rejected(client: TestClient):
         data = websocket.receive_json()
         assert "error" in data
         assert "Authentication failed" in data["error"]
-

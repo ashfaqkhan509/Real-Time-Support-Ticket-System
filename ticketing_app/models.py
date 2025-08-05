@@ -46,7 +46,7 @@ class User(Base):
     )
 
     created_tickets: Mapped[list["Ticket"]] = relationship(
-        back_populates="creator", 
+        back_populates="creator",
         foreign_keys="[Ticket.created_by]"
     )
     replies: Mapped[list["Reply"]] = relationship(

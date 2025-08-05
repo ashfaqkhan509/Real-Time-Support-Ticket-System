@@ -9,16 +9,17 @@ from ticketing_app.auth import verify_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
+
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db)
 ) -> User:
     """Get current authenticated user"""
     email = verify_token(token)
-    
+
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
-    
+
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -26,6 +27,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
 
 async def get_current_agent(
     current_user: User = Depends(get_current_user)
@@ -37,6 +39,7 @@ async def get_current_agent(
             detail="Only agents can perform this action"
         )
     return current_user
+
 
 async def get_current_regular_user(
     current_user: User = Depends(get_current_user)

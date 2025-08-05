@@ -1,12 +1,11 @@
 import asyncio
 from logging.config import fileConfig
-
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
-
 from alembic import context
-
+from ticketing_app.database import Base
 from dotenv import load_dotenv
+
 load_dotenv()
 
 
@@ -17,8 +16,6 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Import your models' metadata here for autogenerate support
-from ticketing_app.database import Base  # 👈 update this to your actual models path
 target_metadata = Base.metadata
 
 

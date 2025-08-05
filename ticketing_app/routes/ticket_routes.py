@@ -5,19 +5,26 @@ from sqlalchemy.orm import selectinload
 from typing import List
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-
 from ticketing_app.database import get_db
 from ticketing_app.models import User, Ticket, Reply, UserRole
 from ticketing_app.schemas import (
-    TicketCreate, TicketResponse, TicketWithReplies,
-    ReplyCreate, ReplyResponse
+    TicketCreate,
+    TicketResponse,
+    TicketWithReplies,
+    ReplyCreate,
+    ReplyResponse
 )
-from ticketing_app.dependencies import get_current_user, get_current_agent, get_current_regular_user
+from ticketing_app.dependencies import (
+    get_current_user,
+    get_current_agent,
+    get_current_regular_user
+)
 from ticketing_app.websocket.manager import manager
 from ticketing_app.tasks.celery_tasks import send_reply_notification, log_reply_event
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+
 
 @router.post("/", response_model=TicketResponse)
 @limiter.limit("5/minute")
@@ -34,11 +41,11 @@ async def create_ticket(
         status=ticket_data.status,
         created_by=current_user.id
     )
-    
+
     db.add(db_ticket)
     await db.commit()
     await db.refresh(db_ticket)
-    
+
     # Load creator relationship
     result = await db.execute(
         select(Ticket)
@@ -46,8 +53,9 @@ async def create_ticket(
         .where(Ticket.id == db_ticket.id)
     )
     ticket_with_creator = result.scalar_one()
-    
+
     return ticket_with_creator
+
 
 @router.get("/{ticket_id}", response_model=TicketWithReplies)
 async def get_ticket(
@@ -65,21 +73,22 @@ async def get_ticket(
         .where(Ticket.id == ticket_id)
     )
     ticket = result.scalar_one_or_none()
-    
+
     if not ticket:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Ticket not found"
         )
-    
+
     # Users can only see their own tickets, agents can see all
     if current_user.role == UserRole.USER and ticket.created_by != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only view your own tickets"
         )
-    
+
     return ticket
+
 
 @router.post("/{ticket_id}/reply", response_model=ReplyResponse)
 async def reply_to_ticket(
@@ -96,24 +105,24 @@ async def reply_to_ticket(
         .where(Ticket.id == ticket_id)
     )
     ticket = result.scalar_one_or_none()
-    
+
     if not ticket:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Ticket not found"
         )
-    
+
     # Create reply
     db_reply = Reply(
         ticket_id=ticket_id,
         message=reply_data.message,
         replied_by=current_user.id
     )
-    
+
     db.add(db_reply)
     await db.commit()
     await db.refresh(db_reply)
-    
+
     # Load author relationship
     result = await db.execute(
         select(Reply)
@@ -121,7 +130,7 @@ async def reply_to_ticket(
         .where(Reply.id == db_reply.id)
     )
     reply_with_author = result.scalar_one()
-    
+
     # Send real-time update via WebSocket to all connected clients except the sender
     print(f"=== Sending WebSocket update ===")
     print(f"Active connections: {manager.active_connections}")
@@ -140,12 +149,13 @@ async def reply_to_ticket(
         },
         "ticket_id": ticket_id
     }, exclude_user_id=current_user.id)
-    
+
     # Send background tasks
     send_reply_notification.delay(ticket.creator.email, ticket.title, reply_data.message)
     log_reply_event.delay(ticket_id, current_user.id, reply_data.message)
-    
+
     return reply_with_author
+
 
 @router.patch("/{ticket_id}/status", response_model=TicketResponse)
 async def update_ticket_status(
@@ -162,13 +172,13 @@ async def update_ticket_status(
         .where(Ticket.id == ticket_id)
     )
     ticket = result.scalar_one_or_none()
-    
+
     if not ticket:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Ticket not found"
         )
-    
+
     # Update status
     new_status = status_update.get("status")
     if new_status:
@@ -176,14 +186,15 @@ async def update_ticket_status(
         ticket.status = new_status
         await db.commit()
         await db.refresh(ticket)
-        
+
         # Send real-time status update via WebSocket
         await manager.send_status_update(ticket_id, new_status, current_user.id)
-        
+
         # Log status change
         log_reply_event.delay(ticket_id, current_user.id, f"Status changed from {old_status} to {new_status}")
-    
+
     return ticket
+
 
 @router.get("/", response_model=List[TicketResponse])
 async def list_tickets(
@@ -206,6 +217,6 @@ async def list_tickets(
             .where(Ticket.created_by == current_user.id)
             .order_by(Ticket.created_at.desc())
         )
-    
+
     tickets = result.scalars().all()
     return tickets

@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from ticketing_app.models import User
 
+
 class ConnectionManager:
     def __init__(self):
         # Store active connections per ticket with user info
@@ -13,14 +14,14 @@ class ConnectionManager:
         """Accept WebSocket connection and add to ticket channel"""
         if ticket_id not in self.active_connections:
             self.active_connections[ticket_id] = []
-        
+
         connection_info = {
             "websocket": websocket,
             "user_id": user.id,
             "user_email": user.email,
             "user_role": user.role
         }
-        
+
         self.active_connections[ticket_id].append(connection_info)
 
     def disconnect(self, websocket: WebSocket, ticket_id: int):
@@ -30,7 +31,7 @@ class ConnectionManager:
                 conn for conn in self.active_connections[ticket_id]
                 if conn["websocket"] != websocket
             ]
-            
+
             # Clean up empty channels
             if not self.active_connections[ticket_id]:
                 del self.active_connections[ticket_id]
@@ -39,20 +40,20 @@ class ConnectionManager:
         """Send message to all connections in a ticket channel"""
         if ticket_id in self.active_connections:
             message_text = json.dumps(message)
-            
+
             # Send to all connections, remove dead ones
             dead_connections = []
             for connection_info in self.active_connections[ticket_id]:
                 # Skip if excluding specific user
                 if exclude_user_id and connection_info["user_id"] == exclude_user_id:
                     continue
-                    
+
                 try:
                     await connection_info["websocket"].send_text(message_text)
                 except Exception as e:
                     print(f"Failed to send WebSocket message: {e}")
                     dead_connections.append(connection_info)
-            
+
             # Remove dead connections
             for dead_conn in dead_connections:
                 if dead_conn in self.active_connections[ticket_id]:
@@ -81,6 +82,7 @@ class ConnectionManager:
                 for conn in self.active_connections[ticket_id]
             ]
         return []
+
 
 # Global connection manager instance
 manager = ConnectionManager()

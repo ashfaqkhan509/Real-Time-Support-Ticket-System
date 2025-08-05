@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -36,9 +36,11 @@ manager = ConnectionManager()
 app.include_router(auth_routes.router, prefix="/auth", tags=["Authentication"])
 app.include_router(ticket_routes.router, prefix="/tickets", tags=["Tickets"])
 
+
 @app.on_event("startup")
 async def startup_event():
     await create_tables()
+
 
 @app.websocket("/ws/tickets/{ticket_id}")
 async def websocket_endpoint(websocket: WebSocket, ticket_id: int):
@@ -82,7 +84,7 @@ async def websocket_endpoint(websocket: WebSocket, ticket_id: int):
                     await websocket.close()
                     return
                 
-        except Exception as e:
+        except Exception:
             await websocket.send_json({"error": "Authentication failed"})
             await websocket.close()
             return
@@ -95,24 +97,19 @@ async def websocket_endpoint(websocket: WebSocket, ticket_id: int):
             "user": user.email,
             "role": user.role
         })
-        
-        # Keep connection alive
+
+        # Hold connection until closed
         while True:
-            try:
-                # Listen for ping messages to keep connection alive
-                message = await websocket.receive_json()
-                if message.get("type") == "ping":
-                    await websocket.send_json({"type": "pong"})
-            except Exception:
-                break
-                
+            await websocket.receive_text()
+
     except WebSocketDisconnect:
         manager.disconnect(websocket, ticket_id)
     except Exception as e:
         print(f"WebSocket error: {e}")
         await websocket.close()
 
+
+
 @app.get("/")
 async def root():
     return {"message": "Support Ticket System API"}
-

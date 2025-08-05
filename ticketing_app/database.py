@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 # Database configuration based on environment
 if os.getenv("ENVIRONMENT") == "test":
     DATABASE_URL = os.getenv("TEST_DATABASE_URL")
@@ -21,8 +22,10 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False
 )
 
+
 class Base(DeclarativeBase):
     pass
+
 
 async def get_db():
     """Dependency to get database session"""
@@ -31,6 +34,7 @@ async def get_db():
             yield session
         finally:
             await session.close()
+
 
 async def create_tables():
     """Create all tables"""
