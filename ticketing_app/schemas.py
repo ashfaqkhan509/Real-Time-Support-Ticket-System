@@ -18,7 +18,6 @@ class UserResponse(UserBase):
     id: int
     created_at: datetime
 
-
     class Config:
         from_attributes = True
 
@@ -58,7 +57,6 @@ class TicketResponse(TicketBase):
     updated_at: datetime
     creator: UserResponse
 
-
     class Config:
         from_attributes = True
 
@@ -78,7 +76,6 @@ class ReplyResponse(ReplyBase):
     replied_by: int
     created_at: datetime
     author: UserResponse
-
 
     class Config:
         from_attributes = True

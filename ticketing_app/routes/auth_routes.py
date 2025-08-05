@@ -43,7 +43,7 @@ async def signup(
     db.add(db_user)
     await db.commit()
     await db.refresh(db_user)
-    
+
     return db_user
 
 
