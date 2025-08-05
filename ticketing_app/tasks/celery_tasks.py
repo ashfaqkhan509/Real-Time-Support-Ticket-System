@@ -63,13 +63,18 @@ def send_reply_notification(user_email: str, ticket_title: str, reply_message: s
 
 @celery_app.task
 def log_reply_event(ticket_id: int, agent_id: int, message: str):
-    """Log reply events to file"""
+    """Log reply events to file."""
     try:
-        log_entry = f"{datetime.now().isoformat()} - Ticket {ticket_id} - Agent {agent_id} replied: {message[:50]}...\n"
+        timestamp = datetime.now().isoformat()
+        truncated_msg = message[:50]
+        log_entry = (
+            f"{timestamp} - Ticket {ticket_id} - "
+            f"Agent {agent_id} replied: {truncated_msg}...\n"
+        )
 
         os.makedirs("logs", exist_ok=True)
-        with open("logs/replies.log", "a") as f:
-            f.write(log_entry)
+        with open("logs/replies.log", "a", encoding="utf-8") as log_file:
+            log_file.write(log_entry)
 
         print(f"Logged reply event for ticket {ticket_id}")
 
