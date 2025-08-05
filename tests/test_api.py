@@ -7,8 +7,10 @@ from ticketing_app.auth import get_password_hash
 
 
 @pytest.mark.asyncio
-async def test_signup_success(client: httpx.AsyncClient,
-                             db_session: AsyncSession):
+async def test_signup_success(
+    client: httpx.AsyncClient,
+    db_session: AsyncSession
+):
     """Test successful user signup."""
     payload = {
         "email": "testuser@example.com",
@@ -98,10 +100,10 @@ async def test_login_invalid_password(client: httpx.AsyncClient):
 
 # Helper function to get auth token
 async def get_auth_token(
-        client: httpx.AsyncClient,
-        email: str,
-        password: str
-    ):
+    client: httpx.AsyncClient,
+    email: str,
+    password: str
+):
     response = await client.post("/auth/login", data={
         "username": email,
         "password": password

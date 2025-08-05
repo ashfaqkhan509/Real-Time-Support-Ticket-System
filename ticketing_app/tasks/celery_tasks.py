@@ -18,6 +18,7 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 
+
 @celery_app.task
 def send_reply_notification(user_email: str, ticket_title: str, reply_message: str):
     """Send email notification when agent replies to ticket"""
@@ -26,23 +27,23 @@ def send_reply_notification(user_email: str, ticket_title: str, reply_message: s
         msg['From'] = SMTP_USERNAME
         msg['To'] = user_email
         msg['Subject'] = f"New Reply to Your Ticket: {ticket_title}"
-        
+
         body = f"""
         Dear Customer,
-        
+
         You have received a new reply to your support ticket: "{ticket_title}"
-        
+
         Reply:
         {reply_message}
-        
+
         Please log in to your account to view the full conversation.
-        
+
         Best regards,
         Support Team
         """
-        
+
         msg.attach(MIMEText(body, 'plain'))
-        
+
         # Send email (only if SMTP is configured)
         if SMTP_USERNAME and SMTP_PASSWORD:
             server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
@@ -51,25 +52,26 @@ def send_reply_notification(user_email: str, ticket_title: str, reply_message: s
             text = msg.as_string()
             server.sendmail(SMTP_USERNAME, user_email, text)
             server.quit()
-            
+
             print(f"Email sent to {user_email}")
         else:
             print(f"Would send email to {user_email}: {ticket_title}")
-            
+
     except Exception as e:
         print(f"Failed to send email: {e}")
+
 
 @celery_app.task
 def log_reply_event(ticket_id: int, agent_id: int, message: str):
     """Log reply events to file"""
     try:
         log_entry = f"{datetime.now().isoformat()} - Ticket {ticket_id} - Agent {agent_id} replied: {message[:50]}...\n"
-        
+
         os.makedirs("logs", exist_ok=True)
         with open("logs/replies.log", "a") as f:
             f.write(log_entry)
-            
+
         print(f"Logged reply event for ticket {ticket_id}")
-        
+
     except Exception as e:
         print(f"Failed to log reply event: {e}")

@@ -132,9 +132,6 @@ async def reply_to_ticket(
     reply_with_author = result.scalar_one()
 
     # Send real-time update via WebSocket to all connected clients except the sender
-    print(f"=== Sending WebSocket update ===")
-    print(f"Active connections: {manager.active_connections}")
-    print(f"Message content: {reply_with_author.message}")
     await manager.send_to_ticket(ticket_id, {
         "type": "new_reply",
         "reply": {
@@ -191,7 +188,11 @@ async def update_ticket_status(
         await manager.send_status_update(ticket_id, new_status, current_user.id)
 
         # Log status change
-        log_reply_event.delay(ticket_id, current_user.id, f"Status changed from {old_status} to {new_status}")
+        log_reply_event.delay(
+            ticket_id,
+            current_user.id,
+            f"Status changed from {old_status} to {new_status}"
+        )
 
     return ticket
 

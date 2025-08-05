@@ -46,49 +46,49 @@ async def startup_event():
 async def websocket_endpoint(websocket: WebSocket, ticket_id: int):
     """WebSocket endpoint for real-time ticket updates"""
     await websocket.accept()
-    
+
     try:
         # Wait for authentication token
         auth_message = await websocket.receive_json()
         token = auth_message.get("token")
-        
+
         if not token:
             await websocket.send_json({"error": "Authentication token required"})
             await websocket.close()
             return
-        
+
         # Verify token and get user
         try:
             email = verify_token(token)
             async with AsyncSessionLocal() as db:
                 result = await db.execute(select(User).where(User.email == email))
                 user = result.scalar_one_or_none()
-                
+
                 if not user:
                     await websocket.send_json({"error": "Invalid user"})
                     await websocket.close()
                     return
-                
+
                 # Check if user has access to this ticket
                 ticket_result = await db.execute(select(Ticket).where(Ticket.id == ticket_id))
                 ticket = ticket_result.scalar_one_or_none()
-                
+
                 if not ticket:
                     await websocket.send_json({"error": "Ticket not found"})
                     await websocket.close()
                     return
-                
+
                 # Users can only access their own tickets, agents can access all
                 if user.role == UserRole.USER and ticket.created_by != user.id:
                     await websocket.send_json({"error": "Access denied"})
                     await websocket.close()
                     return
-                
+
         except Exception:
             await websocket.send_json({"error": "Authentication failed"})
             await websocket.close()
             return
-        
+
         # Add to connection manager with user info
         await manager.connect(websocket, ticket_id, user)
         await websocket.send_json({
@@ -107,7 +107,6 @@ async def websocket_endpoint(websocket: WebSocket, ticket_id: int):
     except Exception as e:
         print(f"WebSocket error: {e}")
         await websocket.close()
-
 
 
 @app.get("/")

@@ -36,7 +36,12 @@ class ConnectionManager:
             if not self.active_connections[ticket_id]:
                 del self.active_connections[ticket_id]
 
-    async def send_to_ticket(self, ticket_id: int, message: dict, exclude_user_id: Optional[int] = None):
+    async def send_to_ticket(
+        self,
+        ticket_id: int,
+        message: dict,
+        exclude_user_id: Optional[int] = None
+    ):
         """Send message to all connections in a ticket channel"""
         if ticket_id in self.active_connections:
             message_text = json.dumps(message)
